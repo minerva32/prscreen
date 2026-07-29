@@ -97,6 +97,12 @@ if (!result.verdict.submit) {
 }
 ```
 
+## Support
+
+prscreen is free under the MIT license and always will be. If it saved you from
+a wasted pull request, you can [buy me a coffee](https://ko-fi.com/minerva32).
+That is voluntary and buys no extra features, priority, or support guarantees.
+
 ## License
 
 MIT
