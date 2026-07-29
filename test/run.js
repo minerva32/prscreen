@@ -111,6 +111,31 @@ test('does not read an insufficiency note as a sign-off gate', () => {
   assert.deepStrictEqual(findings, []);
 });
 
+// Regression: closing pull requests for contributor inactivity is routine
+// housekeeping. Calling it a blanket pause would badly misrepresent a project
+// that actively wants contributions.
+test('does not treat stale-PR auto-close as paused contributions', () => {
+  const text =
+    'Please address the requested changes or provide feedback within 14 days. ' +
+    'If there is no response during this time, it will be automatically closed.';
+  const findings = findPolicyGates([{ path: 'CONTRIBUTING.md', text }]);
+  assert.ok(!findings.some((f) => f.id === 'unsolicited-pr-paused'));
+});
+
+// A deadline attached to a real requirement must still be reported.
+test('keeps a requirement that carries its own deadline', () => {
+  const text = 'You must sign the Contributor License Agreement within 30 days.';
+  const findings = findPolicyGates([{ path: 'CONTRIBUTING.md', text }]);
+  assert.ok(findings.some((f) => f.id === 'cla-required'));
+});
+
+test('ignores explicitly neutral wording about AI assistance', () => {
+  const text =
+    'All the details on how to contribute (with or without AI assistance) are in the guide.';
+  const findings = findPolicyGates([{ path: 'CONTRIBUTING.md', text }]);
+  assert.deepStrictEqual(findings, []);
+});
+
 test('treats an optional screenshot as not required', () => {
   const findings = findPolicyGates([
     { path: 'CONTRIBUTING.md', text: 'Screenshots are optional but appreciated.' },

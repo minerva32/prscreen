@@ -27,6 +27,9 @@ const CANCELLED = [
   // an insufficient measure, not a gate this tool can check.
   /\bis\s+not\s+(?:enough|sufficient)\b/i,
   /\bdoes\s+not\s+(?:satisfy|count|suffice)\b/i,
+  // "contribute (with or without AI assistance)" is explicitly neutral.
+  /\bwith\s+or\s+without\b/i,
+  /\beither\s+way\b/i,
 ];
 
 /**
@@ -47,12 +50,24 @@ const OPTIONAL =
 const SCOPED_REFUSAL =
   /\b(?:not\s+accepting|won't\s+accept|do\s+not\s+accept|no)\b[^.\n]{0,60}\b(?:pull\s+requests?|PRs?|contributions?)\b[^.\n]{0,20}\b(?:that|which|for|adding|to\s+add|containing|introducing|unless|without|other\s+than)\b/i;
 
-function isDefused(line) {
-  return (
-    CANCELLED.some((pattern) => pattern.test(line)) ||
-    OPTIONAL.test(line) ||
-    SCOPED_REFUSAL.test(line)
-  );
+/**
+ * Auto-close driven by contributor inactivity is routine stale-PR housekeeping,
+ * not a closed door. Treating "closed after 14 days without a response" as a
+ * blanket pause would be badly misleading.
+ */
+const STALE_HOUSEKEEPING =
+  /\b(?:stale|inactiv\w+|no\s+(?:response|activity|updates?)|within\s+\d+\s+days?|after\s+\d+\s+days?)\b/i;
+
+function isDefused(line, ruleId) {
+  if (CANCELLED.some((pattern) => pattern.test(line))) return true;
+  if (OPTIONAL.test(line)) return true;
+  if (SCOPED_REFUSAL.test(line)) return true;
+  // Only the auto-close rule can be defused by inactivity wording; a deadline
+  // elsewhere ("sign the CLA within 30 days") is a real requirement.
+  if (ruleId === 'unsolicited-pr-paused' && STALE_HOUSEKEEPING.test(line)) {
+    return true;
+  }
+  return false;
 }
 
 const POLICY_RULES = [
@@ -149,7 +164,7 @@ function findPolicyGates(documents) {
         const line = lines[i];
         if (!rule.patterns.some((pattern) => pattern.test(line))) continue;
         // A line that negates or softens the requirement is not a gate.
-        if (isDefused(line)) continue;
+        if (isDefused(line, rule.id)) continue;
         evidence.push({ path: doc.path, line: i + 1, text: line.trim().slice(0, 200) });
         break;
       }
