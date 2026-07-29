@@ -3,6 +3,18 @@
   "version": "1.0.0",
   "description": "Check a repository's contribution rules and your diff before opening a pull request",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minerva32/prscreen.git"
+  },
+  "homepage": "https://github.com/minerva32/prscreen#readme",
+  "bugs": {
+    "url": "https://github.com/minerva32/prscreen/issues"
+  },
+  "funding": {
+    "type": "ko-fi",
+    "url": "https://ko-fi.com/minerva32"
+  },
   "main": "src/index.js",
   "bin": {
     "prscreen": "bin/prscreen.js"
