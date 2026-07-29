@@ -23,15 +23,17 @@ const CONSOLE_IS_EXPECTED =
 const LEFTOVER_PATTERNS = [
   {
     id: 'debug-output',
-    re: /^\s*(?:console\.(?:log|debug|dir)\s*\(|print\s*\(|println!\s*\(|fmt\.Print|System\.out\.print)/,
+    // Debug calls are not always first on a line, so anchoring to the line
+    // start missed them. The boundary keeps `logger.debug(` from matching.
+    re: /(?:^|[;{}\s])(?:console\.(?:log|debug|dir)\s*\(|println!\s*\(|fmt\.Print|System\.out\.print)/,
   },
   {
     id: 'debugger-statement',
-    re: /^\s*(?:debugger\b|breakpoint\s*\(\)|pdb\.set_trace\s*\()/,
+    re: /(?:^|[;{}\s])(?:debugger\s*;|debugger\s*$|breakpoint\s*\(\)|pdb\.set_trace\s*\()/,
   },
   {
     id: 'focused-test',
-    re: /^\s*(?:it|test|describe|context)\.only\b|^\s*(?:fit|fdescribe)\s*\(/,
+    re: /(?:^|[;{}\s])(?:it|test|describe|context)\.only\s*\(|(?:^|[;{}\s])(?:fit|fdescribe)\s*\(/,
   },
   {
     id: 'merge-conflict-marker',

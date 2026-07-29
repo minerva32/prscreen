@@ -376,3 +376,34 @@ diff --git a/test/parser.test.js b/test/parser.test.js
   const gaps = findEvidenceGaps(diff);
   assert.ok(gaps.some((x) => x.id === 'debug-output'));
 });
+
+// Regression: real debug calls often are not first on the line, and anchoring
+// the pattern to the line start silently missed them.
+test('catches a debug call in the middle of a line', () => {
+  const diff = `diff --git a/src/a.js b/src/a.js
+--- a/src/a.js
++++ b/src/a.js
+@@ -1 +1 @@
+-function f(){ return 1; }
++function f(){ console.log('dbg'); return 2; }
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(gaps.some((x) => x.id === 'debug-output'));
+});
+
+// A logger call is intentional output, not a forgotten debug statement.
+test('does not flag a logger call that merely contains debug', () => {
+  const diff = `diff --git a/src/a.js b/src/a.js
+--- a/src/a.js
++++ b/src/a.js
+@@ -1,2 +1,3 @@
++  logger.debug('starting up');
+diff --git a/test/a.test.js b/test/a.test.js
+--- a/test/a.test.js
++++ b/test/a.test.js
+@@ -1,2 +1,3 @@
++it('starts', () => {});
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(!gaps.some((x) => x.id === 'debug-output'));
+});

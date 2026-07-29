@@ -1,0 +1,38 @@
+#!/bin/sh
+# Based on a hook from prscreen
+# Source: https://github.com/minerva32/prscreen
+#
+# This hook screens the commits you are about to push for the things reviewers
+# reject first: formatting churn that inflates the diff, debugging leftovers,
+# and source changes that arrive without a test.
+#
+# The hook should exit with non-zero status after issuing an appropriate
+# message if it stops the git push.
+#
+# Requirements:
+#   * Node.js 18 or newer (prscreen is fetched with npx on first run)
+#
+# To enable this hook, rename this file to "pre-push".
+
+upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)"
+
+# Compare against the upstream branch when there is one, otherwise fall back to
+# the default branch so a brand new branch still gets screened.
+if [ -n "$upstream" ]; then
+  base="$upstream"
+else
+  base="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
+fi
+
+changes="$(git diff "$base"... 2>/dev/null)"
+
+if [ -z "$changes" ]; then
+  exit 0
+fi
+
+if ! printf '%s' "$changes" | npx --yes prscreen --diff -; then
+  echo ""
+  echo "prscreen flagged the changes you are pushing."
+  echo "Address them, or push again with --no-verify to skip this check."
+  exit 1
+fi

@@ -52,6 +52,21 @@ git diff origin/main... | prscreen --repo owner/name --diff -
 Exit code is `0` when it is safe to submit and `1` when there is a blocker, so it
 drops into CI or a git hook without extra glue.
 
+## As a git hook
+
+A ready-made `pre-push` hook lives in [hooks/pre-push](hooks/pre-push). It
+screens the commits you are about to push and stops the push if something needs
+attention:
+
+```bash
+curl -o .git/hooks/pre-push \
+  https://raw.githubusercontent.com/minerva32/prscreen/master/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
+It compares against your upstream branch, or the default branch when the branch
+is new. Push with `--no-verify` to skip it.
+
 ## What it checks
 
 Contribution gates, read from `CONTRIBUTING.md`, `.github/CONTRIBUTING.md`,
