@@ -102,6 +102,15 @@ async function main() {
     console.log('           Formatting-only edits make a focused fix read as a rewrite.');
   }
 
+  for (const gap of result.evidence) {
+    console.log('');
+    console.log('  ' + paint(YELLOW, 'WARNING') + '  ' + gap.summary);
+    for (const e of gap.evidence) {
+      console.log('           ' + paint(DIM, e.path + (e.line ? ':' + e.line : '')));
+    }
+    console.log('           ' + gap.advice);
+  }
+
   console.log('');
   if (result.verdict.submit) {
     console.log('  ' + paint(GREEN, 'Verdict: no documented gate found'));

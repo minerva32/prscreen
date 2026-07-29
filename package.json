@@ -1,6 +1,6 @@
 {
   "name": "prscreen",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Check a repository's contribution rules and your diff before opening a pull request",
   "license": "MIT",
   "repository": {

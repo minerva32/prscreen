@@ -2,6 +2,7 @@
 
 const { findPolicyGates } = require('./policy');
 const { findFormattingNoise } = require('./diff');
+const { findEvidenceGaps } = require('./evidence');
 
 // Raw URLs are case sensitive even though GitHub's UI is not, so a project that
 // ships `contributing.md` would be missed by an uppercase-only list.
@@ -61,6 +62,7 @@ async function screen(input) {
   const docs = input.docs ?? (input.repo ? await fetchContributionDocs(input.repo) : []);
   const policy = findPolicyGates(docs);
   const noise = input.diff ? findFormattingNoise(input.diff) : [];
+  const evidence = input.diff ? findEvidenceGaps(input.diff) : [];
 
   const blockers = policy.filter((p) => p.severity === 'blocker');
   const noisyLines = noise.reduce((sum, n) => sum + n.count, 0);
@@ -70,10 +72,11 @@ async function screen(input) {
     documentsRead: docs.map((d) => d.path),
     policy,
     formatting: noise,
+    evidence,
     verdict: {
-      submit: blockers.length === 0 && noisyLines === 0,
+      submit: blockers.length === 0 && noisyLines === 0 && evidence.length === 0,
       blockers: blockers.length,
-      warnings: policy.length - blockers.length,
+      warnings: policy.length - blockers.length + evidence.length,
       noisyLines,
     },
   };

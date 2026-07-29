@@ -5,6 +5,7 @@ const { test } = require('node:test');
 
 const { findPolicyGates } = require('../src/policy');
 const { findFormattingNoise, parseUnifiedDiff } = require('../src/diff');
+const { findEvidenceGaps, classify } = require('../src/evidence');
 
 // Wording taken from real CONTRIBUTING files encountered while contributing.
 const activepiecesContributing = `## Pull requests
@@ -243,4 +244,135 @@ test('ignores newly added files with no removals', () => {
 +const b = 2;
 `;
   assert.deepStrictEqual(findFormattingNoise(diff), []);
+});
+
+test('classifies paths by role', () => {
+  assert.strictEqual(classify('src/index.js'), 'source');
+  assert.strictEqual(classify('test/run.js'), 'test');
+  assert.strictEqual(classify('src/thing.test.ts'), 'test');
+  assert.strictEqual(classify('README.md'), 'doc');
+  assert.strictEqual(classify('package-lock.json'), 'lock');
+  assert.strictEqual(classify('dist/bundle.js'), 'generated');
+});
+
+test('flags a source change that ships without a test', () => {
+  const diff = `diff --git a/src/pay.js b/src/pay.js
+--- a/src/pay.js
++++ b/src/pay.js
+@@ -10,3 +10,3 @@
+-  return amount * 1.1;
++  return amount * 1.2;
+`;
+  const gap = findEvidenceGaps(diff).find((x) => x.id === 'no-test-evidence');
+  assert.ok(gap, 'expected a missing-test finding');
+  assert.strictEqual(gap.evidence[0].path, 'src/pay.js');
+});
+
+test('stays quiet when a test accompanies the source change', () => {
+  const diff = `diff --git a/src/pay.js b/src/pay.js
+--- a/src/pay.js
++++ b/src/pay.js
+@@ -10,3 +10,3 @@
+-  return amount * 1.1;
++  return amount * 1.2;
+diff --git a/test/pay.test.js b/test/pay.test.js
+--- a/test/pay.test.js
++++ b/test/pay.test.js
+@@ -1,3 +1,4 @@
++test('applies the new rate', () => {});
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(!gaps.some((x) => x.id === 'no-test-evidence'));
+});
+
+// A docs-only or lockfile-only change must not be told to add tests.
+test('does not demand tests for documentation or lockfile changes', () => {
+  const diff = `diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,2 @@
+-old wording
++new wording
+diff --git a/package-lock.json b/package-lock.json
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -5,3 +5,3 @@
+-    "version": "1.0.0",
++    "version": "1.0.1",
+`;
+  assert.deepStrictEqual(findEvidenceGaps(diff), []);
+});
+
+test('flags debugging leftovers on added lines', () => {
+  const diff = `diff --git a/src/a.js b/src/a.js
+--- a/src/a.js
++++ b/src/a.js
+@@ -1,4 +1,5 @@
+ function run() {
++  console.log('here');
+   return 1;
+ }
+diff --git a/test/a.test.js b/test/a.test.js
+--- a/test/a.test.js
++++ b/test/a.test.js
+@@ -1,2 +1,3 @@
++it.only('runs', () => {});
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(gaps.some((x) => x.id === 'debug-output'));
+  assert.ok(gaps.some((x) => x.id === 'focused-test'));
+});
+
+// Removing a debug line is an improvement, not a finding.
+test('does not flag removed debug lines', () => {
+  const diff = `diff --git a/src/a.js b/src/a.js
+--- a/src/a.js
++++ b/src/a.js
+@@ -1,4 +1,3 @@
+ function run() {
+-  console.log('here');
+   return 1;
+ }
+diff --git a/test/a.test.js b/test/a.test.js
+--- a/test/a.test.js
++++ b/test/a.test.js
+@@ -1,2 +1,3 @@
++it('runs', () => {});
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(!gaps.some((x) => x.id === 'debug-output'));
+});
+
+// Regression: a CLI writes to stdout by design. Flagging that would fire on
+// every command line tool, logger, and build script, including this project.
+test('does not treat stdout in a CLI or script as a leftover', () => {
+  const diff = `diff --git a/bin/tool.js b/bin/tool.js
+--- a/bin/tool.js
++++ b/bin/tool.js
+@@ -1,3 +1,4 @@
++  console.log('Verdict: ready');
+diff --git a/scripts/release.js b/scripts/release.js
+--- a/scripts/release.js
++++ b/scripts/release.js
+@@ -1,3 +1,4 @@
++console.log('published');
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(!gaps.some((x) => x.id === 'debug-output'));
+});
+
+test('still flags stdout added to library code', () => {
+  const diff = `diff --git a/src/parser.js b/src/parser.js
+--- a/src/parser.js
++++ b/src/parser.js
+@@ -1,3 +1,4 @@
++  console.log('debugging parser', token);
+diff --git a/test/parser.test.js b/test/parser.test.js
+--- a/test/parser.test.js
++++ b/test/parser.test.js
+@@ -1,2 +1,3 @@
++it('parses', () => {});
+`;
+  const gaps = findEvidenceGaps(diff);
+  assert.ok(gaps.some((x) => x.id === 'debug-output'));
 });

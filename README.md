@@ -75,6 +75,20 @@ The formatting checks exist because a mismatched local formatter is the fastest
 way to turn a three-line fix into a hundred-line diff that reads as machine
 output. Reviewers notice.
 
+Evidence, also from a unified diff:
+
+- source changed with no accompanying test
+- debugging output left in library code
+- `debugger` / `breakpoint()` / `pdb.set_trace()` statements
+- focused tests (`it.only`, `fdescribe`) that would silently skip the rest
+- merge conflict markers
+
+These checks do not try to guess whether a human or a model wrote the change.
+That is not knowable from a diff, and it is not the useful question. They ask
+what a reviewer asks: does the change prove itself, and is it clean?
+Documentation and lockfile edits are never asked for tests, and a CLI or logger
+writing to stdout is not treated as a leftover.
+
 ## What it does not do
 
 It reads published documents, not minds. Specifically:
