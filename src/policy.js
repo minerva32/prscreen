@@ -23,15 +23,36 @@ const CANCELLED = [
   /\b(?:no|without\s+(?:a|an)?)\s*(?:CLA|DCO|contributor\s+license\s+agreement|sign-?off|signed-off-by)\b/i,
   /\b(?:CLA|DCO|sign-?off)\s+is\s+not\b/i,
   /\bexempt\s+from\b/i,
+  // "A Signed-off-by line is not enough to satisfy this requirement" describes
+  // an insufficient measure, not a gate this tool can check.
+  /\bis\s+not\s+(?:enough|sufficient)\b/i,
+  /\bdoes\s+not\s+(?:satisfy|count|suffice)\b/i,
 ];
 
 /**
- * Wording that marks a requirement as optional rather than mandatory.
+ * Wording that marks a requirement as optional, illustrative, or conditional
+ * rather than mandatory. Template comments in particular tend to suggest
+ * artifacts ("e.g. a short screen recording") without requiring them.
  */
-const OPTIONAL = /\b(?:optional|encouraged|appreciated|nice to have|if you (?:can|want|like)|feel free)\b/i;
+const OPTIONAL =
+  /\b(?:optional(?:ly)?|encouraged|appreciated|nice to have|if you (?:can|want|like)|feel free|as needed|if (?:relevant|applicable|possible|helpful)|e\.g\.|for example|such as|where appropriate)\b/i;
+
+/**
+ * Wording that limits a refusal to a specific kind of change rather than to
+ * contributions in general. "not accepting pull requests that add new
+ * formatting options" is a scope rule, not a closed door, and reporting it as a
+ * blanket blocker sends contributors away from a project that would take their
+ * work.
+ */
+const SCOPED_REFUSAL =
+  /\b(?:not\s+accepting|won't\s+accept|do\s+not\s+accept|no)\b[^.\n]{0,60}\b(?:pull\s+requests?|PRs?|contributions?)\b[^.\n]{0,20}\b(?:that|which|for|adding|to\s+add|containing|introducing|unless|without|other\s+than)\b/i;
 
 function isDefused(line) {
-  return CANCELLED.some((pattern) => pattern.test(line)) || OPTIONAL.test(line);
+  return (
+    CANCELLED.some((pattern) => pattern.test(line)) ||
+    OPTIONAL.test(line) ||
+    SCOPED_REFUSAL.test(line)
+  );
 }
 
 const POLICY_RULES = [

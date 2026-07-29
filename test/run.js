@@ -88,6 +88,29 @@ test('does not report gates a project says it does not have', () => {
   }
 });
 
+// Regression: a refusal limited to one kind of change is not a closed door.
+// Reporting it as a blanket blocker sends contributors away from a project that
+// would have taken their work.
+test('does not treat a scoped refusal as a blanket blocker', () => {
+  const text =
+    'Prettier is an opinionated formatter and is not accepting pull requests ' +
+    'that add new formatting options.';
+  const findings = findPolicyGates([{ path: 'CONTRIBUTING.md', text }]);
+  assert.ok(
+    !findings.some((f) => f.id === 'unsolicited-pr-paused'),
+    'a scope rule must not be reported as paused contributions',
+  );
+});
+
+// Regression: "a Signed-off-by line is not enough" describes an insufficient
+// measure, not a sign-off requirement.
+test('does not read an insufficiency note as a sign-off gate', () => {
+  const text =
+    'A `Signed-off-by` line in the commit message is not enough to satisfy this requirement.';
+  const findings = findPolicyGates([{ path: 'CONTRIBUTING.md', text }]);
+  assert.deepStrictEqual(findings, []);
+});
+
 test('treats an optional screenshot as not required', () => {
   const findings = findPolicyGates([
     { path: 'CONTRIBUTING.md', text: 'Screenshots are optional but appreciated.' },

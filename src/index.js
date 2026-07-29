@@ -3,12 +3,19 @@
 const { findPolicyGates } = require('./policy');
 const { findFormattingNoise } = require('./diff');
 
+// Raw URLs are case sensitive even though GitHub's UI is not, so a project that
+// ships `contributing.md` would be missed by an uppercase-only list.
 const CONTRIB_FILES = [
   'CONTRIBUTING.md',
+  'contributing.md',
   '.github/CONTRIBUTING.md',
+  '.github/contributing.md',
   'docs/CONTRIBUTING.md',
+  'docs/contributing.md',
   'CONTRIBUTING',
   '.github/PULL_REQUEST_TEMPLATE.md',
+  '.github/pull_request_template.md',
+  'PULL_REQUEST_TEMPLATE.md',
 ];
 
 const RAW_BASE = 'https://raw.githubusercontent.com';
@@ -26,10 +33,21 @@ async function fetchText(url) {
  * @param {string} [branch]
  */
 async function fetchContributionDocs(repo, branch = 'HEAD') {
+  const results = await Promise.all(
+    CONTRIB_FILES.map(async (path) => {
+      const text = await fetchText(`${RAW_BASE}/${repo}/${branch}/${path}`);
+      return text == null ? null : { path, text };
+    }),
+  );
+
+  // Keep only one document per distinct body so a repository that serves the
+  // same file from two casings is not reported twice.
+  const seen = new Set();
   const docs = [];
-  for (const path of CONTRIB_FILES) {
-    const text = await fetchText(`${RAW_BASE}/${repo}/${branch}/${path}`);
-    if (text != null) docs.push({ path, text });
+  for (const doc of results) {
+    if (doc == null || seen.has(doc.text)) continue;
+    seen.add(doc.text);
+    docs.push(doc);
   }
   return docs;
 }
