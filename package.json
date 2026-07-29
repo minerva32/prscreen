@@ -1,0 +1,29 @@
+{
+  "name": "prscreen",
+  "version": "1.0.0",
+  "description": "Check a repository's contribution rules and your diff before opening a pull request",
+  "license": "MIT",
+  "main": "src/index.js",
+  "bin": {
+    "prscreen": "bin/prscreen.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/run.js"
+  },
+  "keywords": [
+    "pull-request",
+    "contributing",
+    "cla",
+    "dco",
+    "code-review",
+    "git-hook"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
