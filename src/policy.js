@@ -19,6 +19,10 @@ const CANCELLED = [
   /\bis\s+not\s+required\b/i,
   /\bare\s+not\s+required\b/i,
   /\bno\s+longer\s+(?:require|required|need|needed)\b/i,
+  // "There is no CLA", "no sign-off requirement", "without a CLA"
+  /\b(?:no|without\s+(?:a|an)?)\s*(?:CLA|DCO|contributor\s+license\s+agreement|sign-?off|signed-off-by)\b/i,
+  /\b(?:CLA|DCO|sign-?off)\s+is\s+not\b/i,
+  /\bexempt\s+from\b/i,
 ];
 
 /**

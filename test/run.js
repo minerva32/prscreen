@@ -71,6 +71,23 @@ test('does not report a requirement the project explicitly waives', () => {
   assert.deepStrictEqual(findings, []);
 });
 
+// Regression: "There is no CLA and no sign-off requirement" is the natural way
+// to say a project has neither gate, and it must not read as having both.
+test('does not report gates a project says it does not have', () => {
+  const phrasings = [
+    'Pull requests are welcome. There is no CLA and no sign-off requirement.',
+    'Contributions are accepted without a CLA.',
+    'No DCO sign-off is needed.',
+  ];
+  for (const text of phrasings) {
+    assert.deepStrictEqual(
+      findPolicyGates([{ path: 'CONTRIBUTING.md', text }]),
+      [],
+      'expected no gate for: ' + text,
+    );
+  }
+});
+
 test('treats an optional screenshot as not required', () => {
   const findings = findPolicyGates([
     { path: 'CONTRIBUTING.md', text: 'Screenshots are optional but appreciated.' },
